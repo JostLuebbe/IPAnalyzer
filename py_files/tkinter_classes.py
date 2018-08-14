@@ -11,7 +11,7 @@ import xlsxwriter as xw
 from PIL import ImageTk, Image
 
 
-class IPAnalyzerGUI():
+class IPAnalyzerGUI:
     def __init__(self, master):
         self.master = master
         master.title('IPAnalyzer')
@@ -205,13 +205,20 @@ class IPAnalyzerGUI():
         self.right_difference_entry_field.grid(column=0, row=5)
         self.export_button.grid(column=0, row=6)
 
-    @staticmethod
-    def call(line):
-        try:
-            return netaddr.IPNetwork(line)
-        except netaddr.core.AddrFormatError as e:
-            lg.error(f'Improper formatting of input: {e}')
-            return None
+    def left_call(self, line):
+        if not line:
+            return
+        if '-' in line:
+            self.left_ip_set.update(
+                [ip for ip in netaddr.IPRange(line.split('-')[0].strip(), line.split('-')[1].strip())])
+        elif '/' in line:
+            self.left_ip_set.update([ip for ip in netaddr.IPNetwork(line.strip())])
+        else:
+            try:
+                return netaddr.IPNetwork(line)
+            except netaddr.core.AddrFormatError as e:
+                lg.error(f'Improper formatting of input: {e}')
+                return None
 
     def read_left_input(self):
         if not len(self.left_input_field.get(1.0, tk.END)) - 1:
@@ -219,8 +226,9 @@ class IPAnalyzerGUI():
             self.master.lift()
             return
 
-        temp_set = {self.call(line) for line in self.left_input_field.get(1.0, tk.END).splitlines()}
-        self.left_ip_set = netaddr.IPSet(x for x in temp_set if x is not None)
+        for line in self.left_input_field.get(1.0, tk.END).splitlines():
+            self.left_call(line)
+        # self.left_ip_set = netaddr.IPSet(x for x in temp_set if x is not None)
 
         self.left_input_field.delete(1.0, tk.END)
 
